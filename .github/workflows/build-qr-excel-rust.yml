@@ -1,0 +1,29 @@
+name: build-qr-excel-rust
+
+on:
+  push:
+    branches: [ qr-excel-rust-build ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: qr-excel-rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Run tests
+        run: cargo test --release
+      - name: Build release EXE
+        run: cargo build --release
+      - name: Copy executable
+        shell: pwsh
+        run: Copy-Item target/release/qr_excel_rust.exe ../qr_excel_rust.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qr-excel-rust-windows
+          path: qr_excel_rust.exe
