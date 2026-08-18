@@ -3,6 +3,8 @@ name: build-qr-excel-rust
 on:
   push:
     branches: [ qr-excel-rust-build ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
