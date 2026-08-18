@@ -1,0 +1,20 @@
+[package]
+name = "qr_excel_rust"
+version = "1.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+anyhow = "1.0"
+image = { version = "0.25", default-features = false, features = ["png"] }
+native-windows-gui = { version = "1.0.13", features = ["file-dialog"] }
+qrcode = { version = "0.14", features = ["image"] }
+tempfile = "3"
+umya-spreadsheet = "2.3.3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+opt-level = "z"
+strip = true
+panic = "abort"
