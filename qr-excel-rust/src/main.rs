@@ -59,11 +59,13 @@ fn export_workbook(input: &Path, output: &Path) -> Result<usize> {
         .get_sheet_by_name_mut("Sheet1")
         .ok_or_else(|| anyhow!("模板中未找到 Sheet1 工作表"))?;
 
+    // 用户提供的模板：A=序号，B=标签编码，C=二维码。
     let header = sheet.get_value((2, 1));
     if header.trim() != "标签编码" {
         bail!("模板格式不匹配：Sheet1 的 B1 应为“标签编码”");
     }
 
+    // 若导入的是已经生成过的文件，避免重复叠加二维码图片。
     sheet.get_image_collection_mut().clear();
     sheet.get_column_dimension_mut("C").set_width(15.0);
 
@@ -87,7 +89,8 @@ fn export_workbook(input: &Path, output: &Path) -> Result<usize> {
         marker.set_coordinate(format!("C{row}"));
 
         let mut qr_image = Image::default();
-        qr_image.new_image(qr_path.to_string_lossy(), marker);
+        let qr_path_string = qr_path.to_string_lossy().into_owned();
+        qr_image.new_image(&qr_path_string, marker);
         sheet.add_image(qr_image);
         sheet.get_row_dimension_mut(&row).set_height(78.0);
         count += 1;
@@ -111,7 +114,7 @@ fn main() {
     let mut import_button = nwg::Button::default();
     let mut export_button = nwg::Button::default();
     let mut template_button = nwg::Button::default();
-    let layout = nwg::GridLayout::default();
+    layout = nwg::GridLayout::default();
 
     let mut import_dialog = nwg::FileDialog::default();
     let mut export_dialog = nwg::FileDialog::default();
@@ -123,7 +126,7 @@ fn main() {
         .position((420, 320))
         .title("二维码批量生成器")
         .build(&mut window)
-        .expect("创建窗口失败");
+        .expect("创建窗#�W失败");
 
     nwg::Button::builder()
         .text("导入")
@@ -193,11 +196,13 @@ fn main() {
                             *imported_for_events.borrow_mut() = Some(PathBuf::from(path));
                             nwg::modal_info_message(&event_window2.handle, "导入", "Excel 已导入");
                         }
-                        Err(e) => nwg::modal_error_message(
-                            &event_window2.handle,
-                            "错误",
-                            &format!("读取所选文件失败：{e}"),
-                        ),
+                        Err(e) => {
+                            nwg::modal_error_message(
+                                &event_window2.handle,
+                                "错误",
+                                &format!("读取所选文件失败：{e}"),
+                            );
+                        }
                     }
                 }
             }
@@ -219,23 +224,29 @@ fn main() {
                         Ok(path) => {
                             let output = ensure_xlsx_extension(PathBuf::from(path));
                             match export_workbook(&input, &output) {
-                                Ok(count) => nwg::modal_info_message(
-                                    &event_window2.handle,
-                                    "完成",
-                                    &format!("已生成 {count} 个二维码并导出 Excel"),
-                                ),
-                                Err(e) => nwg::modal_error_message(
-                                    &event_window2.handle,
-                                    "导出失败",
-                                    &format!("{e:#}"),
-                                ),
+                                Ok(count) => {
+                                    nwg::modal_info_message(
+                                        &event_window2.handle,
+                                        "完成",
+                                        &format!("已生成 {count} 个二维码并导出 Excel"),
+                                    );
+                                }
+                                Err(e) => {
+                                    nwg::modal_error_message(
+                                        &event_window2.handle,
+                                        "导出失败",
+                                        &format!("{e:#}"),
+                                    );
+                                }
                             }
                         }
-                        Err(e) => nwg::modal_error_message(
-                            &event_window2.handle,
-                            "错误",
-                            &format!("无法获取导出路径：{e}"),
-                        ),
+                        Err(e) => {
+                            nwg::modal_error_message(
+                                &event_window2.handle,
+                                "错误",
+                                &format!("无法获取导出路径：{e}"),
+                            );
+                        }
                     }
                 }
             }
@@ -245,23 +256,29 @@ fn main() {
                         Ok(path) => {
                             let output = ensure_xlsx_extension(PathBuf::from(path));
                             match fs::write(&output, TEMPLATE_BYTES) {
-                                Ok(_) => nwg::modal_info_message(
-                                    &event_window2.handle,
-                                    "模板下载",
-                                    "模板已保存",
-                                ),
-                                Err(e) => nwg::modal_error_message(
-                                    &event_window2.handle,
-                                    "保存失败",
-                                    &format!("{e}"),
-                                ),
+                                Ok(_) => {
+                                    nwg::modal_info_message(
+                                        &event_window2.handle,
+                                        "模板下载",
+                                        "模板已保存",
+                                    );
+                                }
+                                Err(e) => {
+                                    nwg::modal_error_message(
+                                        &event_window2.handle,
+                                        "保存失败",
+                                        &format!("{e}"),
+                                    );
+                                }
                             }
                         }
-                        Err(e) => nwg::modal_error_message(
-                            &event_window2.handle,
-                            "错误",
-                            &format!("无法获取保存路径：{e}"),
-                        ),
+                        Err(e) => {
+                            nwg::modal_error_message(
+                                &event_window2.handle,
+                                "错误",
+                                &format!("无法获取保存路径：{e}"),
+                            );
+                        }
                     }
                 }
             }
