@@ -18,10 +18,9 @@ const KEY: [usize; 5] = [2, 4, 8, 16, 32];
 const TEMPLATE_BYTES: &[u8] = include_bytes!("../assets/模板.xlsx");
 
 fn encode_label(input: &str) -> Result<String> {
+    let table = TABLE.as_bytes();
     let mut out = String::with_capacity(input.len() + 2);
     out.push_str("A#");
-    let table = TABLE.as_bytes();
-
     for (i, b) in input.as_bytes().iter().copied().enumerate() {
         let pos = table
             .iter()
@@ -54,18 +53,14 @@ fn make_qr_png(data: &str, path: &Path) -> Result<()> {
 fn export_workbook(input: &Path, output: &Path) -> Result<usize> {
     let mut book = umya_spreadsheet::reader::xlsx::read(input)
         .with_context(|| format!("无法读取 Excel：{}", input.display()))?;
-
     let sheet = book
         .get_sheet_by_name_mut("Sheet1")
         .ok_or_else(|| anyhow!("模板中未找到 Sheet1 工作表"))?;
 
-    // 用户提供的模板：A=序号，B=标签编码，C=二维码。
-    let header = sheet.get_value((2, 1));
-    if header.trim() != "标签编码" {
+    if sheet.get_value((2, 1)).trim() != "标签编码" {
         bail!("模板格式不匹配：Sheet1 的 B1 应为“标签编码”");
     }
 
-    // 若导入的是已经生成过的文件，避免重复叠加二维码图片。
     sheet.get_image_collection_mut().clear();
     sheet.get_column_dimension_mut("C").set_width(15.0);
 
@@ -114,8 +109,7 @@ fn main() {
     let mut import_button = nwg::Button::default();
     let mut export_button = nwg::Button::default();
     let mut template_button = nwg::Button::default();
-    layout = nwg::GridLayout::default();
-
+    let layout = nwg::GridLayout::default();
     let mut import_dialog = nwg::FileDialog::default();
     let mut export_dialog = nwg::FileDialog::default();
     let mut template_dialog = nwg::FileDialog::default();
@@ -126,20 +120,18 @@ fn main() {
         .position((420, 320))
         .title("二维码批量生成器")
         .build(&mut window)
-        .expect("创建窗#�W失败");
+        .expect("创建窗口失败");
 
     nwg::Button::builder()
         .text("导入")
         .parent(&window)
         .build(&mut import_button)
         .expect("创建导入按钮失败");
-
     nwg::Button::builder()
         .text("导出")
         .parent(&window)
         .build(&mut export_button)
         .expect("创建导出按钮失败");
-
     nwg::Button::builder()
         .text("模板下载")
         .parent(&window)
@@ -162,14 +154,12 @@ fn main() {
         .filters("Excel 工作簿(*.xlsx)")
         .build(&mut import_dialog)
         .expect("创建导入对话框失败");
-
     nwg::FileDialog::builder()
         .title("导出 Excel")
         .action(nwg::FileDialogAction::Save)
         .filters("Excel 工作簿(*.xlsx)")
         .build(&mut export_dialog)
         .expect("创建导出对话框失败");
-
     nwg::FileDialog::builder()
         .title("保存模板")
         .action(nwg::FileDialogAction::Save)
@@ -184,7 +174,6 @@ fn main() {
 
     let handler = nwg::full_bind_event_handler(&event_window.handle, move |evt, _, handle| {
         use nwg::Event as E;
-
         match evt {
             E::OnWindowClose if &handle == &event_window2.handle => {
                 nwg::stop_thread_dispatch();
